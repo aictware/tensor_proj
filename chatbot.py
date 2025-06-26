@@ -19,8 +19,35 @@ if 'messages' not in st.session_state:
     st.session_state.messages=[]
 
 # 기존의 메시지가 있다면 출력
-
+for msg in st.session_state.messages:
+    with st.chat_message(msg['role']):
+        st.markdown(msg['content'])
 
 # prompt => 사용자 입력창
 if prompt := st.chat_input('메시지를 입력하세요!') :
-    st.write(prompt)
+    # messages => [] , 대화 내용 추가
+    st.session_state.messages.append({
+        "role" : "user",
+        "content": prompt
+    })
+
+    with st.chat_message('user'):
+        st.markdown(prompt)
+
+    with st.chat_message('assistant'):
+        stream = client.chat.completions.create(
+            model=st.session_state.openai_model,
+            messages=[
+                {"role": m['role'], "content": m['content']}
+                for m in st.session_state.messages
+            ],
+            stream=True
+        )
+        response = st.write_stream(stream)
+
+    st.session_state.messages.append(
+        {
+            "role": "assistant",
+            "content": response
+        }
+    )
